@@ -137,11 +137,18 @@ class RedisConfig(val initialHost: RedisEndpoint) extends  Serializable {
     */
   private def clusterEnabled(initialHost: RedisEndpoint): Boolean = {
     val conn = initialHost.connect()
-    val info = conn.info.split("\n")
-    val version = info.filter(_.contains("redis_version:"))(0)
-    val clusterEnable = info.filter(_.contains("cluster_enabled:"))
-    val mainVersion = version.substring(14, version.indexOf(".")).toInt
-    val res = mainVersion>2 && clusterEnable.length>0 && clusterEnable(0).contains("1")
+    var res = false
+    try {
+      val info = conn.info.split("\n")
+      val version = info.filter(_.contains("redis_version:"))(0)
+      val clusterEnable = info.filter(_.contains("cluster_enabled:"))
+      val mainVersion = version.substring(14, version.indexOf(".")).toInt
+      res = mainVersion>2 && clusterEnable.length>0 && clusterEnable(0).contains("1")
+    } catch {
+      case ex:ArrayIndexOutOfBoundsException =>{
+        res = false
+      }
+    }
     conn.close
     res
   }
